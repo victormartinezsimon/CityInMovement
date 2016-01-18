@@ -21,6 +21,11 @@ public class IATileEditor : Editor
     public override void OnInspectorGUI()
     {
         IATile myTarget = (IATile)target;
+        for(int i = 0; i < myTarget.tileNumber.Length; i++)
+        {
+            EditorGUILayout.LabelField(i.ToString() + "-" + myTarget.tileNumber[i].ToString());
+        }
+
         myTarget.entranceNorth = EditorGUILayout.IntField("Entrance North", myTarget.entranceNorth);
         myTarget.entranceSouth = EditorGUILayout.IntField("Entrance South", myTarget.entranceSouth);
         myTarget.entranceEast = EditorGUILayout.IntField("Entrance East", myTarget.entranceEast);
@@ -106,10 +111,6 @@ public class IATileEditor : Editor
             }
 
             EditorGUILayout.EndVertical();
-            if(GUILayout.Button("generate matrix"))
-            {
-                myTarget._buildFromEditor(actualSize);
-            }
         }
         EditorGUILayout.EndFadeGroup();
     }

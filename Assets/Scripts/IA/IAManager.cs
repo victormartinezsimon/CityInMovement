@@ -2,15 +2,15 @@
 using System.Collections;
 using System.Collections.Generic;
 
-public class IAMaager {
+public class IAManager {
 
     #region singleton
-    private static IAMaager m_instance;
-    public static IAMaager getInstance()
+    private static IAManager m_instance;
+    public static IAManager getInstance()
     {
         if(m_instance == null)
         {
-            m_instance = new IAMaager();
+            m_instance = new IAManager();
         }
         return m_instance;
     }
@@ -18,7 +18,7 @@ public class IAMaager {
     public List<Node> listNodes;
 
 
-    private IAMaager()
+    private IAManager()
     {
         listNodes = new List<Node>();
     }
@@ -35,13 +35,9 @@ public class IAMaager {
         listNodes.Add(n);
         return n.id;
     }
-    public void addConexion(int node, params int[] conexion)
+    public void addConexion(int origin, int destiny)
     {
-        Node n = listNodes[node];
-        for(int i = 0; i < conexion.Length; i++)
-        {
-            n.m_nexts.Add(i);
-        }
+        listNodes[origin].m_nexts.Add(destiny);
     }
 
 

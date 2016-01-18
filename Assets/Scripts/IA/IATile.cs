@@ -15,8 +15,9 @@ public class IATile : MonoBehaviour {
     [HideInInspector]
     public int[] tileNumber;
 
-    public void _buildFromEditor(int lenght)
+    public void buildFromArray()
     {
+        int lenght = Mathf.RoundToInt(Mathf.Sqrt(_m_waysEditor.Length));
         m_ways = new bool[lenght, lenght];
 
         for(int i = 0; i < lenght * lenght; i++)

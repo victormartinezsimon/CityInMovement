@@ -63,6 +63,8 @@ public class Generator : MonoBehaviour {
 
     private GameObject m_parent = null;
 
+    public bool debugMode = false;
+
     // Use this for initialization
     void Start () {
         
@@ -74,7 +76,14 @@ public class Generator : MonoBehaviour {
         {
             GenerateCity();
         }
-	}
+
+        if (Input.GetKeyDown(KeyCode.D))
+        {
+            debugMode = !debugMode;
+        }
+        drawDebug();
+
+    }
 
     public void GenerateCity()
     {
@@ -149,25 +158,140 @@ public class Generator : MonoBehaviour {
     private void generateIA()
     {
         //step1-> add all nodes to the ia
-        IAMaager.getInstance().reset();
-        for(int i = 0; i < m_width; i++)
+        IAManager.getInstance().reset();
+        for (int i = 0; i < m_width; i++)
         {
-            for(int j = 0; j < m_height; j++)
+            for (int j = 0; j < m_height; j++)
             {
                 GameObject go = m_gameObjects[i, j];
                 IATile tile = go.GetComponent<IATile>();
-                if(tile != null)
+                if (tile != null)
                 {
                     tile.tileNumber = new int[tile.m_checkpoints.Length];
-                    for(int node = 0; node < tile.m_checkpoints.Length; node++)
+                    for (int node = 0; node < tile.m_checkpoints.Length; node++)
                     {
-                        int id = IAMaager.getInstance().AddNode(go.transform);
+                        int id = IAManager.getInstance().AddNode(tile.m_checkpoints[node].transform);
                         tile.tileNumber[node] = id;
                     }
                 }
             }
         }
         //step2-> add the conexions
+        for (int i = 0; i < m_width; i++)
+        {
+            for (int j = 0; j < m_height; j++)
+            {
+                GameObject go = m_gameObjects[i, j];
+                IATile tile = go.GetComponent<IATile>();
+                if (tile != null)
+                {
+                    tile.buildFromArray();
+                    int tileType = m_city[i, j];
+
+                    for (int nodei = 0; nodei < tile.m_checkpoints.Length; nodei++)
+                    {
+                        for (int nodej = 0; nodej < tile.m_checkpoints.Length; nodej++)
+                        {
+                            if (tile.m_ways[nodei, nodej])
+                            {
+                                IAManager.getInstance().addConexion(tile.tileNumber[nodei], tile.tileNumber[nodej]);
+                            }
+                        }
+                    }
+                    addExternalConexion(i, j, tile);
+                }
+            }
+        }
+    }
+    private void addExternalConexion(int i, int j, IATile tile)
+    {
+        int tileType = m_city[i, j];
+        IATile north = m_gameObjects[i, j + 1].GetComponent<IATile>();
+        IATile south = m_gameObjects[i, j - 1].GetComponent<IATile>();
+        IATile east =  m_gameObjects[i + 1, j].GetComponent<IATile>();
+        IATile west =  m_gameObjects[i - 1, j].GetComponent<IATile>();
+
+        switch (tileType)
+        {
+            case 20:  IAManager.getInstance().addConexion(tile.tileNumber[2], north.tileNumber[north.entranceSouth]);
+                      IAManager.getInstance().addConexion(tile.tileNumber[5], south.tileNumber[south.entranceNorth]);
+                      break;
+            case 21:
+                IAManager.getInstance().addConexion(tile.tileNumber[2], west.tileNumber[west.entranceEast]);
+                IAManager.getInstance().addConexion(tile.tileNumber[5], east.tileNumber[east.entranceWest]);
+                break;
+
+            case 22:
+                IAManager.getInstance().addConexion(tile.tileNumber[2], south.tileNumber[south.entranceNorth]);
+                IAManager.getInstance().addConexion(tile.tileNumber[7], west.tileNumber[west.entranceEast]);
+                break;
+
+            case 23:
+                IAManager.getInstance().addConexion(tile.tileNumber[2], west.tileNumber[west.entranceEast]);
+                IAManager.getInstance().addConexion(tile.tileNumber[7], north.tileNumber[north.entranceSouth]);
+                break;
+
+            case 24:
+                IAManager.getInstance().addConexion(tile.tileNumber[2], north.tileNumber[north.entranceSouth]);
+                IAManager.getInstance().addConexion(tile.tileNumber[7], east.tileNumber[east.entranceWest]);
+                break;
+
+            case 25:
+                IAManager.getInstance().addConexion(tile.tileNumber[2], east.tileNumber[east.entranceWest]);
+                IAManager.getInstance().addConexion(tile.tileNumber[7], south.tileNumber[south.entranceNorth]);
+                break;
+
+            case 30:
+                IAManager.getInstance().addConexion(tile.tileNumber[2], east.tileNumber[east.entranceWest]);
+                IAManager.getInstance().addConexion(tile.tileNumber[6], west.tileNumber[west.entranceEast]);
+                IAManager.getInstance().addConexion(tile.tileNumber[9], south.tileNumber[south.entranceNorth]);
+                break;
+
+            case 31:
+                IAManager.getInstance().addConexion(tile.tileNumber[2], north.tileNumber[north.entranceSouth]);
+                IAManager.getInstance().addConexion(tile.tileNumber[6], south.tileNumber[south.entranceNorth]);
+                IAManager.getInstance().addConexion(tile.tileNumber[9], east.tileNumber[east.entranceWest]);
+                break;
+
+            case 32:
+                IAManager.getInstance().addConexion(tile.tileNumber[2], west.tileNumber[west.entranceEast]);
+                IAManager.getInstance().addConexion(tile.tileNumber[6], east.tileNumber[east.entranceWest]);
+                IAManager.getInstance().addConexion(tile.tileNumber[9], north.tileNumber[north.entranceSouth]);
+                break;
+
+            case 33:
+                IAManager.getInstance().addConexion(tile.tileNumber[2], south.tileNumber[south.entranceNorth]);
+                IAManager.getInstance().addConexion(tile.tileNumber[6], north.tileNumber[north.entranceSouth]);
+                IAManager.getInstance().addConexion(tile.tileNumber[9], west.tileNumber[west.entranceEast]);
+                break;
+
+            case 40:
+                IAManager.getInstance().addConexion(tile.tileNumber[2], east.tileNumber[east.entranceWest]);
+                IAManager.getInstance().addConexion(tile.tileNumber[5], north.tileNumber[north.entranceSouth]);
+                IAManager.getInstance().addConexion(tile.tileNumber[8], west.tileNumber[west.entranceEast]);
+                IAManager.getInstance().addConexion(tile.tileNumber[11], south.tileNumber[south.entranceNorth]);
+                break;
+        }
+
+
+    }
+
+    void drawDebug()
+    {
+        if (!debugMode) { return; }
+        IAManager mngr = IAManager.getInstance();
+
+        for(int i = 0; i < mngr.listNodes.Count; i++)
+        {
+            IAManager.Node n = mngr.listNodes[i];
+            for(int destiny = 0; destiny < n.m_nexts.Count; destiny++)
+            {
+                int id = n.m_nexts[destiny];
+                Vector3 origin = n.m_position.position;
+                Vector3 dst = mngr.listNodes[id].m_position.position;
+                Debug.DrawLine(origin, dst,Color.red);
+            }
+        }
 
     }
 }
