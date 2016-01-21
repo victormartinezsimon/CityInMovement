@@ -17,14 +17,14 @@ public class IAManager {
         return m_instance;
     }
     #endregion
-    public List<Node> listNodes;
+    public List<GraphNode> listNodes;
 
     public delegate void callbackIA(List<Vector3> result, List<Vector3> listDebug); 
 
 
     private IAManager()
     {
-        listNodes = new List<Node>();
+        listNodes = new List<GraphNode>();
     }
     public void reset()
     {
@@ -33,7 +33,7 @@ public class IAManager {
     #region Graph builder
     public int AddNode(Vector3 position)
     {
-        Node n = new Node();
+        GraphNode n = new GraphNode();
         n.m_position = position;
         n.m_ID = listNodes.Count;
         listNodes.Add(n);
@@ -45,12 +45,12 @@ public class IAManager {
     }
     #endregion
     #region nodo
-    public class Node
+    public class GraphNode
     {
         public Vector3 m_position;
         public List<int> m_nexts;
         public int m_ID;
-        public Node()
+        public GraphNode()
         {
             m_nexts = new List<int>();
         }
@@ -84,11 +84,11 @@ public class IAManager {
             NodeAStar x = this;
             if (x.getTotalCost() > y.getTotalCost())
             {
-                return -1;
+                return 1;
             }
             if (x.getTotalCost() < y.getTotalCost())
             {
-                return 1;
+                return -1;
             }
             return 0;
         }
@@ -107,14 +107,14 @@ public class IAManager {
     private class IASearcher
     {
         private callbackIA m_callback;
-        private List<Node> m_Graph;
+        private List<GraphNode> m_Graph;
         private List<NodeAStar> m_orderedList;
-        private List<Vector3> m_visited;
+        private List<int> m_visited;
         private bool ended;
         private Vector3 m_destiny;
         private List<Vector3> orderInvestigated;
 
-        public IASearcher(int origin, int destiny, callbackIA callback,List<Node> graph)
+        public IASearcher(int origin, int destiny, callbackIA callback,List<GraphNode> graph)
         {
             m_Graph = graph;
             resetSearch(origin, destiny, callback);
@@ -123,7 +123,7 @@ public class IAManager {
         {
             m_destiny = m_Graph[destiny].m_position;
             m_callback = callback;
-            m_visited = new List<Vector3>();
+            m_visited = new List<int>();
             m_orderedList = new List<NodeAStar>();
             ended = false;
             orderInvestigated = new List<Vector3>();
@@ -142,13 +142,14 @@ public class IAManager {
             {
                 NodeAStar n = m_orderedList[0];
                 m_orderedList.RemoveAt(0);
-                m_visited.Add(n.m_position);
+                m_visited.Add(n.m_ID);
 
-                if(n.m_position == m_destiny)
+                if (n.m_position == m_destiny)
                 {
                     ended = true;
                     result = n;
                     result.m_path.Add(result.m_position);
+                    continue;
                 }
 
                 //add next to the list
@@ -176,7 +177,7 @@ public class IAManager {
 
         private void addToList(NodeAStar actualNode, Vector3 transform, int newID)
         {
-            if (!m_visited.Contains(transform))
+            if (!m_visited.Contains(newID))
             {
                 float cost = actualNode.m_cost + 1;
                 float heuristic = calculateHeuristic(transform);

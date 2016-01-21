@@ -292,7 +292,7 @@ public class Generator : MonoBehaviour {
 
         for(int i = 0; i < mngr.listNodes.Count; i++)
         {
-            IAManager.Node n = mngr.listNodes[i];
+            IAManager.GraphNode n = mngr.listNodes[i];
             for(int destiny = 0; destiny < n.m_nexts.Count; destiny++)
             {
                 int id = n.m_nexts[destiny];
@@ -315,7 +315,7 @@ public class Generator : MonoBehaviour {
         {
             yield return new WaitForSeconds(0.3f);
         }
-
+        /*
         for(int i = 0; i < listDebug.Count; i++)
         {
             GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -323,9 +323,9 @@ public class Generator : MonoBehaviour {
             go.transform.position = listDebug[i];
             yield return new WaitForSeconds(0.3f);
         }
+        */
 
-
-        /*
+        
         GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
         go.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
 
@@ -335,7 +335,7 @@ public class Generator : MonoBehaviour {
             yield return new WaitForSeconds(0.3f);
         }
         Destroy(go);
-        */
+        
     }
    
 }
