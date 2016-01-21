@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 
 public class Generator : MonoBehaviour {
@@ -65,6 +66,9 @@ public class Generator : MonoBehaviour {
 
     public bool debugMode = false;
 
+    public int origin;
+    public int destiny;
+
     // Use this for initialization
     void Start () {
         
@@ -83,6 +87,11 @@ public class Generator : MonoBehaviour {
         }
         drawDebug();
 
+        if (Input.GetKeyDown(KeyCode.T))
+        {
+            StopAllCoroutines();
+            StartCoroutine(debugIA());
+        }
     }
 
     public void GenerateCity()
@@ -170,7 +179,7 @@ public class Generator : MonoBehaviour {
                     tile.tileNumber = new int[tile.m_checkpoints.Length];
                     for (int node = 0; node < tile.m_checkpoints.Length; node++)
                     {
-                        int id = IAManager.getInstance().AddNode(tile.m_checkpoints[node].transform);
+                        int id = IAManager.getInstance().AddNode(tile.m_checkpoints[node].transform.position);
                         tile.tileNumber[node] = id;
                     }
                 }
@@ -287,11 +296,46 @@ public class Generator : MonoBehaviour {
             for(int destiny = 0; destiny < n.m_nexts.Count; destiny++)
             {
                 int id = n.m_nexts[destiny];
-                Vector3 origin = n.m_position.position;
-                Vector3 dst = mngr.listNodes[id].m_position.position;
+                Vector3 origin = n.m_position;
+                Vector3 dst = mngr.listNodes[id].m_position;
                 Debug.DrawLine(origin, dst,Color.red);
             }
         }
 
     }
+
+    private IEnumerator debugIA()
+    {
+        List<Vector3> m_result = null;
+        List<Vector3> listDebug = null;
+        bool ended = false;
+        IAManager.getInstance().giveMeRoute(origin, destiny, (List<Vector3> result, List<Vector3> m_debug) => { m_result = result; listDebug = m_debug; ended = true;});
+
+        while (!ended)
+        {
+            yield return new WaitForSeconds(0.3f);
+        }
+
+        for(int i = 0; i < listDebug.Count; i++)
+        {
+            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            go.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
+            go.transform.position = listDebug[i];
+            yield return new WaitForSeconds(0.3f);
+        }
+
+
+        /*
+        GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        go.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
+
+        for(int i = 0; i < m_result.Count; i++)
+        {
+            go.transform.position = m_result[i];
+            yield return new WaitForSeconds(0.3f);
+        }
+        Destroy(go);
+        */
+    }
+   
 }
