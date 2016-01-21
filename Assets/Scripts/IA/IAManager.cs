@@ -109,10 +109,16 @@ public class IAManager {
         private callbackIA m_callback;
         private List<GraphNode> m_Graph;
         private List<NodeAStar> m_orderedList;
-        private List<int> m_visited;
+        private List<internalNode> m_visited;
         private bool ended;
         private Vector3 m_destiny;
         private List<Vector3> orderInvestigated;
+
+        private struct internalNode
+        {
+            public int id;
+            public float cost;
+        }
 
         public IASearcher(int origin, int destiny, callbackIA callback,List<GraphNode> graph)
         {
@@ -123,7 +129,7 @@ public class IAManager {
         {
             m_destiny = m_Graph[destiny].m_position;
             m_callback = callback;
-            m_visited = new List<int>();
+            m_visited = new List<internalNode>();
             m_orderedList = new List<NodeAStar>();
             ended = false;
             orderInvestigated = new List<Vector3>();
@@ -142,7 +148,10 @@ public class IAManager {
             {
                 NodeAStar n = m_orderedList[0];
                 m_orderedList.RemoveAt(0);
-                m_visited.Add(n.m_ID);
+                internalNode node = new internalNode();
+                node.id = n.m_ID;
+                node.cost = n.m_cost;
+                m_visited.Add(node);
 
                 if (n.m_position == m_destiny)
                 {
@@ -177,9 +186,9 @@ public class IAManager {
 
         private void addToList(NodeAStar actualNode, Vector3 transform, int newID)
         {
-            if (!m_visited.Contains(newID))
+            float cost = actualNode.m_cost + 1;
+            if (canAddToVisited(newID, cost))
             {
-                float cost = actualNode.m_cost + 1;
                 float heuristic = calculateHeuristic(transform);
                 NodeAStar node = new NodeAStar(cost, heuristic, newID, transform);
                 node.m_path.AddRange(actualNode.m_path);
@@ -193,6 +202,31 @@ public class IAManager {
         private float calculateHeuristic(Vector3 t)
         {
             return (m_destiny - t).magnitude;
+        }
+
+        private bool canAddToVisited(int id, float cost)
+        {
+            int listID = -1;
+            for(int i = 0; i < m_visited.Count; i++)
+            {
+                if(m_visited[i].id == id)
+                {
+                    listID = i;
+                    break;
+                }
+            }
+            if(listID != -1)
+            {
+                if(cost < m_visited[listID].cost)
+                {
+                    m_visited.RemoveAt(listID);
+                    return true;
+                } else
+                {
+                    return false;
+                }
+            }
+            return true;
         }
     }
     #endregion
