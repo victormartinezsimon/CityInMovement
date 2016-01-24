@@ -1,9 +1,10 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System;
 
-
-public class Generator : MonoBehaviour {
+public class Generator : MonoBehaviour
+{
 
     #region singleton
     private static Generator m_generator = null;
@@ -59,48 +60,46 @@ public class Generator : MonoBehaviour {
     public GameObject tile32;
     public GameObject tile33;
     public GameObject tile40;
-   
+
     #endregion
 
+    #region cars
+    [Header("Car variables")]
+    public GameObject m_car;
+    public int m_totalCars;
+    #endregion
     private GameObject m_parent = null;
-
+    private GameObject m_parentCar = null;
     public bool debugMode = false;
 
-    public int origin;
-    public int destiny;
-
     // Use this for initialization
-    void Start () {
-        
+    void Start()
+    {
+
     }
-	
-	// Update is called once per frame
-	void Update () {
+
+    // Update is called once per frame
+    void Update()
+    {
         if (Input.GetKeyDown(KeyCode.G))
         {
             GenerateCity();
         }
-
         if (Input.GetKeyDown(KeyCode.D))
         {
             debugMode = !debugMode;
         }
         drawDebug();
-
-        if (Input.GetKeyDown(KeyCode.T))
-        {
-            StopAllCoroutines();
-            StartCoroutine(debugIA());
-        }
     }
 
     public void GenerateCity()
     {
-        m_cityGenerator = new CityGenerator( 10, m_width, m_height);
+        m_cityGenerator = new CityGenerator ((int)DateTime.Now.Ticks, m_width, m_height);
         m_cityGenerator.Build();
         m_city = m_cityGenerator.getCity();
         instantiatePrefabs();
         generateIA();
+        instantiateCars();
     }
     private void instantiatePrefabs()
     {
@@ -114,7 +113,7 @@ public class Generator : MonoBehaviour {
 
         for (int i = 0; i < m_width; i++)
         {
-            for(int j = 0; j < m_height; j++)
+            for (int j = 0; j < m_height; j++)
             {
                 int tile = m_city[i, j];
                 GameObject goInstantiated = instantiateSpecificPrefab(tile, posX, posY);
@@ -138,13 +137,13 @@ public class Generator : MonoBehaviour {
             case 0: m_gameObject = tile0; break;
             case 20: m_gameObject = tile20; break;
             case 21: m_gameObject = tile21; break;
-            case 22: m_gameObject = tile22;  break;
-            case 23: m_gameObject = tile23;  break;
+            case 22: m_gameObject = tile22; break;
+            case 23: m_gameObject = tile23; break;
             case 24: m_gameObject = tile24; break;
             case 25: m_gameObject = tile25; break;
-            case 30: m_gameObject = tile30;  break;
-            case 31: m_gameObject = tile31;  break;
-            case 32: m_gameObject = tile32;  break;
+            case 30: m_gameObject = tile30; break;
+            case 31: m_gameObject = tile31; break;
+            case 32: m_gameObject = tile32; break;
             case 33: m_gameObject = tile33; break;
             case 40: m_gameObject = tile40; break;
             case 41: m_gameObject = tile40; break;
@@ -158,9 +157,13 @@ public class Generator : MonoBehaviour {
 
     private void destroyPreviousPrefabs()
     {
-        if(m_parent != null)
+        if (m_parent != null)
         {
             Destroy(m_parent);
+        }
+        if (m_parentCar != null)
+        {
+            Destroy(m_parentCar);
         }
     }
 
@@ -217,14 +220,15 @@ public class Generator : MonoBehaviour {
         int tileType = m_city[i, j];
         IATile north = m_gameObjects[i, j + 1].GetComponent<IATile>();
         IATile south = m_gameObjects[i, j - 1].GetComponent<IATile>();
-        IATile east =  m_gameObjects[i + 1, j].GetComponent<IATile>();
-        IATile west =  m_gameObjects[i - 1, j].GetComponent<IATile>();
+        IATile east = m_gameObjects[i + 1, j].GetComponent<IATile>();
+        IATile west = m_gameObjects[i - 1, j].GetComponent<IATile>();
 
         switch (tileType)
         {
-            case 20:  IAManager.getInstance().addConexion(tile.tileNumber[2], north.tileNumber[north.entranceSouth]);
-                      IAManager.getInstance().addConexion(tile.tileNumber[5], south.tileNumber[south.entranceNorth]);
-                      break;
+            case 20:
+                IAManager.getInstance().addConexion(tile.tileNumber[2], north.tileNumber[north.entranceSouth]);
+                IAManager.getInstance().addConexion(tile.tileNumber[5], south.tileNumber[south.entranceNorth]);
+                break;
             case 21:
                 IAManager.getInstance().addConexion(tile.tileNumber[2], west.tileNumber[west.entranceEast]);
                 IAManager.getInstance().addConexion(tile.tileNumber[5], east.tileNumber[east.entranceWest]);
@@ -285,57 +289,41 @@ public class Generator : MonoBehaviour {
 
     }
 
+    private void instantiateCars()
+    {
+        m_parentCar = new GameObject("parentCars");
+        for (int i = 0; i < m_totalCars; i++)
+        {
+            GameObject go = Instantiate(m_car);
+            Vector3 position;
+            int id;
+            IAManager.getInstance().getInitialPosition(out position, out id);
+
+            go.transform.position = position;
+            Movement mv = go.GetComponent<Movement>();
+            if (mv != null)
+            {
+                mv.m_destiny = id;
+            }
+            go.transform.parent = m_parentCar.transform;
+        }
+    }
+
     void drawDebug()
     {
         if (!debugMode) { return; }
         IAManager mngr = IAManager.getInstance();
 
-        for(int i = 0; i < mngr.listNodes.Count; i++)
+        for (int i = 0; i < mngr.listNodes.Count; i++)
         {
             IAManager.GraphNode n = mngr.listNodes[i];
-            for(int destiny = 0; destiny < n.m_nexts.Count; destiny++)
+            for (int destiny = 0; destiny < n.m_nexts.Count; destiny++)
             {
                 int id = n.m_nexts[destiny];
                 Vector3 origin = n.m_position;
                 Vector3 dst = mngr.listNodes[id].m_position;
-                Debug.DrawLine(origin, dst,Color.red);
+                Debug.DrawLine(origin, dst, Color.red);
             }
         }
-
     }
-
-    private IEnumerator debugIA()
-    {
-        List<Vector3> m_result = null;
-        List<Vector3> listDebug = null;
-        bool ended = false;
-        IAManager.getInstance().giveMeRoute(origin, destiny, (List<Vector3> result, List<Vector3> m_debug) => { m_result = result; listDebug = m_debug; ended = true;});
-
-        while (!ended)
-        {
-            yield return new WaitForSeconds(0.3f);
-        }
-        /*
-        for(int i = 0; i < listDebug.Count; i++)
-        {
-            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            go.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
-            go.transform.position = listDebug[i];
-            yield return new WaitForSeconds(0.3f);
-        }
-        */
-
-        
-        GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        go.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
-
-        for(int i = 0; i < m_result.Count; i++)
-        {
-            go.transform.position = m_result[i];
-            yield return new WaitForSeconds(0.3f);
-        }
-        Destroy(go);
-        
-    }
-   
 }

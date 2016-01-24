@@ -19,7 +19,7 @@ public class IAManager {
     #endregion
     public List<GraphNode> listNodes;
 
-    public delegate void callbackIA(List<Vector3> result, List<Vector3> listDebug); 
+    public delegate void callbackIA(List<Vector3> result);
 
 
     private IAManager()
@@ -29,6 +29,7 @@ public class IAManager {
     public void reset()
     {
         listNodes.Clear();
+        UnityEngine.Random.seed = Mathf.RoundToInt(DateTime.Now.Ticks);
     }
     #region Graph builder
     public int AddNode(Vector3 position)
@@ -44,7 +45,7 @@ public class IAManager {
         listNodes[origin].m_nexts.Add(destiny);
     }
     #endregion
-    #region nodo
+    #region GraphNode
     public class GraphNode
     {
         public Vector3 m_position;
@@ -103,6 +104,20 @@ public class IAManager {
         t.Start();
     }
 
+    public int giveMeRandomRoute(int origin, callbackIA callback)
+    {
+        int destiny = UnityEngine.Random.Range(0, listNodes.Count);
+        giveMeRoute(origin,destiny , callback);
+        Debug.Log("route from " + origin + " to " + destiny);
+        return destiny;
+    }
+
+    public void getInitialPosition(out Vector3 position, out int m_id)
+    {
+        m_id = UnityEngine.Random.Range(0, listNodes.Count);
+        position = listNodes[m_id].m_position;
+    }
+
     #region thread
     private class IASearcher
     {
@@ -112,7 +127,6 @@ public class IAManager {
         private List<internalNode> m_visited;
         private bool ended;
         private Vector3 m_destiny;
-        private List<Vector3> orderInvestigated;
 
         private struct internalNode
         {
@@ -132,11 +146,9 @@ public class IAManager {
             m_visited = new List<internalNode>();
             m_orderedList = new List<NodeAStar>();
             ended = false;
-            orderInvestigated = new List<Vector3>();
 
             NodeAStar firstNode = new NodeAStar(0, 0, origin, m_Graph[origin].m_position);
             m_orderedList.Add(firstNode);
-            orderInvestigated.Add(m_Graph[origin].m_position);
         }
         //maybe the algorithm is bad
         //because we dont recalculate if we know how to reach a node for a better path
@@ -172,11 +184,11 @@ public class IAManager {
             {
                 if(result != null)
                 {
-                    m_callback(result.m_path, orderInvestigated);
+                    m_callback(result.m_path);
                 }
                 else
                 {
-                    m_callback(null, null);
+                    m_callback(null);
                 }
             }
             long tStop = DateTime.UtcNow.Ticks;
@@ -195,7 +207,6 @@ public class IAManager {
                 node.m_path.Add(actualNode.m_position);
                 m_orderedList.Add(node);
                 m_orderedList.Sort();
-                orderInvestigated.Add(transform);
             }
         }
 
