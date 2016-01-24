@@ -49,6 +49,7 @@ public class CityGenerator {
         m_height = height;
         m_securityDistance = 2;
         m_world = new int[m_width, m_height];
+        seed = 10;
         random = new System.Random(seed);
         initialization();
     }

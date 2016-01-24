@@ -72,12 +72,6 @@ public class Generator : MonoBehaviour
     private GameObject m_parentCar = null;
     public bool debugMode = false;
 
-    // Use this for initialization
-    void Start()
-    {
-
-    }
-
     // Update is called once per frame
     void Update()
     {
@@ -100,6 +94,7 @@ public class Generator : MonoBehaviour
         instantiatePrefabs();
         generateIA();
         instantiateCars();
+        colocateCamera();
     }
     private void instantiatePrefabs()
     {
@@ -184,6 +179,23 @@ public class Generator : MonoBehaviour
                     {
                         int id = IAManager.getInstance().AddNode(tile.m_checkpoints[node].transform.position);
                         tile.tileNumber[node] = id;
+                    }
+
+                    IATrafficLaws laws = go.GetComponent<IATrafficLaws>();
+                    if (laws != null)
+                    {
+                        for(int lawIndex = 0; lawIndex < laws.m_avoidRoutes.Length; lawIndex++)
+                        {
+                            IATrafficLaws.avoid a = laws.m_avoidRoutes[lawIndex];
+                            List<Vector3> toAdd = new List<Vector3>();
+                            for(int avoidIndex = 0; avoidIndex < a.m_avoid.Length; avoidIndex++)
+                            {
+                                int index = a.m_avoid[avoidIndex];
+                                Vector3 realPosition = tile.m_checkpoints[index].transform.position;
+                                toAdd.Add(realPosition);
+                            }
+                            IAManager.getInstance().addBannedNodes(toAdd);
+                        }
                     }
                 }
             }
@@ -306,6 +318,24 @@ public class Generator : MonoBehaviour
                 mv.m_destiny = id;
             }
             go.transform.parent = m_parentCar.transform;
+        }
+    }
+
+    private void colocateCamera()
+    {
+        Vector3 size = tile0.GetComponent<Renderer>().bounds.size;
+        Vector3 newpos = new Vector3(size.x * m_width / 2, size.y * m_height / 2, -10);
+        Camera.main.transform.position = newpos;
+
+        CameraController cc = Camera.main.GetComponent<CameraController>();
+        if(cc != null)
+        {
+            float[] limit = new float[4];
+            limit[0] = 0;
+            limit[1] = size.x * m_width - size.x / 2;
+            limit[2] = 0;
+            limit[3] = size.y * m_height - size.y / 2;
+            cc.limitValues = limit;
         }
     }
 

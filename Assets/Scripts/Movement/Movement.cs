@@ -22,7 +22,7 @@ public class Movement : MonoBehaviour {
     public float m_velocityBetweenPoints;
     #endregion
     
-    private bool debug;
+    public bool debug;
 
     #region unity
     // Use this for initialization
@@ -54,6 +54,7 @@ public class Movement : MonoBehaviour {
     private void doMovementTransform()
     {
         if (!m_move) { return; }
+        if (debug) { return; }
 
         Vector3 deltaMovement = (m_nextPoint1 - m_nextPoint0).normalized * m_velocityBetweenPoints * Time.deltaTime;
 

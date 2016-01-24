@@ -21,6 +21,7 @@ public class IAManager {
 
     public delegate void callbackIA(List<Vector3> result);
 
+    private List<List<Vector3>> m_bannedNodes;
 
     private IAManager()
     {
@@ -30,6 +31,7 @@ public class IAManager {
     {
         listNodes.Clear();
         UnityEngine.Random.seed = Mathf.RoundToInt(DateTime.Now.Ticks);
+        m_bannedNodes = new List<List<Vector3>>();
     }
     #region Graph builder
     public int AddNode(Vector3 position)
@@ -44,6 +46,12 @@ public class IAManager {
     {
         listNodes[origin].m_nexts.Add(destiny);
     }
+    
+    public void addBannedNodes(List<Vector3> bannedNodes)
+    {
+        m_bannedNodes.Add(bannedNodes);
+    }
+    
     #endregion
     #region GraphNode
     public class GraphNode
@@ -99,7 +107,7 @@ public class IAManager {
 
     public void giveMeRoute(int origin, int destiny, callbackIA callback)
     {
-        IASearcher searcher = new IASearcher(origin, destiny, callback, listNodes);
+        IASearcher searcher = new IASearcher(origin, destiny, callback, listNodes,m_bannedNodes);
         Thread t = new Thread(searcher.makeSearch);
         t.Start();
     }
@@ -127,6 +135,7 @@ public class IAManager {
         private List<internalNode> m_visited;
         private bool ended;
         private Vector3 m_destiny;
+        private List<List<Vector3>> m_bannedNodes;
 
         private struct internalNode
         {
@@ -134,9 +143,10 @@ public class IAManager {
             public float cost;
         }
 
-        public IASearcher(int origin, int destiny, callbackIA callback,List<GraphNode> graph)
+        public IASearcher(int origin, int destiny, callbackIA callback,List<GraphNode> graph, List<List<Vector3>> bannedNodes)
         {
             m_Graph = graph;
+            m_bannedNodes = bannedNodes;
             resetSearch(origin, destiny, callback);
         }
         public void resetSearch(int origin, int destiny, callbackIA callback)
@@ -196,13 +206,13 @@ public class IAManager {
             Debug.Log("Ticks to find route => " + diff);
         }
 
-        private void addToList(NodeAStar actualNode, Vector3 transform, int newID)
+        private void addToList(NodeAStar actualNode, Vector3 transformToAdd, int newID)
         {
             float cost = actualNode.m_cost + 1;
-            if (canAddToVisited(newID, cost))
+            if (canAddToVisited(newID, cost) && !wayBanned(actualNode, transformToAdd))
             {
-                float heuristic = calculateHeuristic(transform);
-                NodeAStar node = new NodeAStar(cost, heuristic, newID, transform);
+                float heuristic = calculateHeuristic(transformToAdd);
+                NodeAStar node = new NodeAStar(cost, heuristic, newID, transformToAdd);
                 node.m_path.AddRange(actualNode.m_path);
                 node.m_path.Add(actualNode.m_position);
                 m_orderedList.Add(node);
@@ -239,6 +249,35 @@ public class IAManager {
             }
             return true;
         }
+
+        private bool wayBanned(NodeAStar actualNode, Vector3 transformToAdd)
+        {
+
+            List<Vector3> actualPath = actualNode.m_path;
+            for (int i = 0; i < m_bannedNodes.Count; i++)
+            {
+               if(actualPath.Contains(m_bannedNodes[i][0]))
+                {
+                    bool finded = false;
+                    int min = Mathf.Max(0, actualPath.Count - 5);
+                    
+                    for(int idx = min; idx < actualPath.Count; idx++)
+                    {
+                        if(actualPath[idx] == m_bannedNodes[i][0])
+                        {
+                            finded = true;
+                        }
+                    }
+
+                    if(finded && transformToAdd == m_bannedNodes[i][1])
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
     }
     #endregion
 }
