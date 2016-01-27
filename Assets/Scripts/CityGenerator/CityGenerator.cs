@@ -247,7 +247,7 @@ public class CityGenerator {
         avaliable.Add(32);
         avaliable.Add(33);
         avaliable.Add(40);
-        avaliable.Add(41);
+        //avaliable.Add(41);
         return avaliable;
     }
 

@@ -21,26 +21,49 @@ public class Movement : MonoBehaviour {
     #region variables movement
     public float m_velocityBetweenPoints;
     #endregion
-    
+
+    public float timeBetweenPoints = 1;
+    private float timeAcum = 0;
+
+    public bool  modeLerp = true;
+
     public bool debug;
 
+    #region strange bug
+    private bool IBreakTheRules;
+    private List<Vector3> allMyCheckPoints;
+    private GameObject parentBreakRules;
+    private Vector3 dontMove;
+    #endregion
     #region unity
     // Use this for initialization
-    void Start () {
+    void Start() {
         m_mutex = new Mutex(true);
         listPosition = new List<Vector3>();
         m_mutex.ReleaseMutex();
         getPath();
         m_nextPoint0 = transform.position;
+        IBreakTheRules = false;
+        allMyCheckPoints = new List<Vector3>();
     }
-	// Update is called once per frame
-	void Update () {
+    // Update is called once per frame
+    void Update() {
+        if (IBreakTheRules) {
+            if (Input.GetKeyDown(KeyCode.R))
+            {
+                StopAllCoroutines();
+                StartCoroutine(paintPath());
+
+            }
+            transform.position = dontMove;
+            return;
+        }
         doMovementTransform();
         if (Input.GetKeyDown(KeyCode.D))
         {
             debug = !debug;
         }
-        if (Input.GetKeyDown(KeyCode.S))
+        if (Input.GetKey(KeyCode.S))
         {
             if (debug)
             {
@@ -48,17 +71,33 @@ public class Movement : MonoBehaviour {
                 arriveToDestiny();
             }
         }
-	}
+    }
     #endregion
     #region movement transform
     private void doMovementTransform()
     {
         if (!m_move) { return; }
-        if (debug) { return; }
-
+        /*
         Vector3 deltaMovement = (m_nextPoint1 - m_nextPoint0).normalized * m_velocityBetweenPoints * Time.deltaTime;
-
         this.transform.position += deltaMovement;
+        */
+        if (modeLerp)
+        {
+            timeAcum += Time.deltaTime;
+            float time = timeAcum / timeBetweenPoints;
+            this.transform.position = Vector3.Lerp(m_nextPoint0, m_nextPoint1, time);
+        }
+        else
+        {
+            Vector3 vDirector = (m_nextPoint1 - transform.position).normalized;
+            Vector3 deltaMovement = vDirector * m_velocityBetweenPoints * Time.deltaTime;
+
+            Debug.DrawLine(this.transform.position, this.transform.position + vDirector, Color.magenta);
+            this.transform.up = vDirector;
+            this.transform.position += deltaMovement;
+        }
+
+
         arriveToDestiny();
     }
     private void rotateToDestiny()
@@ -72,7 +111,11 @@ public class Movement : MonoBehaviour {
     #region ia
     private void getPath()
     {
+        string name = m_destiny + " => ";
         m_destiny = IAManager.getInstance().giveMeRandomRoute(m_destiny, callbackIA);
+        name += m_destiny;
+        this.name = name;
+
         //IAManager.getInstance().giveMeRoute(1, 0, callbackIA);
     }
 
@@ -98,9 +141,9 @@ public class Movement : MonoBehaviour {
     {
         Vector3 distanceV3 = m_nextPoint1 - transform.position;
         float magnitude = distanceV3.magnitude;
-
         if(magnitude <= m_distanceAlpha)
         {
+            allMyCheckPoints.Add(transform.position);
             m_nextPoint0 = transform.position;
 
             //recalculate destiny or not move if there is no more destinies
@@ -128,8 +171,61 @@ public class Movement : MonoBehaviour {
                 getPath();
             }
             m_mutex.ReleaseMutex();
+            timeAcum = 0;
         }
     }
 
+    #endregion
+    #region strange bug
+    public void autoDestroy()
+    {
+        if(!IBreakTheRules)
+        {
+            Destroy(this.gameObject);
+        }
+    }
+    void OnTriggerEnter(Collider other)
+    {
+        IBreakTheRules = true;
+        int count = this.transform.parent.childCount;
+        for(int i = 0; i< count; i++)
+        {
+            this.transform.parent.GetChild(i).SendMessage("autoDestroy");
+        }
+        dontMove = this.transform.position;
+        StartCoroutine(paintPath());
+    }
+
+    IEnumerator paintPath()
+    {
+        if(parentBreakRules != null)
+        {
+            Destroy(parentBreakRules);
+        }
+        parentBreakRules = new GameObject("Break Rules");
+        yield return new WaitForEndOfFrame();
+        for(int i = 0; i < allMyCheckPoints.Count; i++)
+        {
+            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            go.transform.position = allMyCheckPoints[i];
+            go.name = i.ToString();
+            go.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f);
+            go.transform.parent = parentBreakRules.transform;
+            go.GetComponent<Renderer>().material.color = Color.red;
+            yield return new WaitForSeconds(0.4f);
+        }
+
+        for (int i = 0; i < listPosition.Count; i++)
+        {
+            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            go.transform.position = listPosition[i];
+            go.name = i.ToString();
+            go.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f);
+            go.transform.parent = parentBreakRules.transform;
+            go.GetComponent<Renderer>().material.color = Color.yellow;
+            yield return new WaitForSeconds(0.4f);
+        }
+
+    }
     #endregion
 }

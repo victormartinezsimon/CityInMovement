@@ -45,6 +45,10 @@ public class IAManager {
     public void addConexion(int origin, int destiny)
     {
         listNodes[origin].m_nexts.Add(destiny);
+        if(origin == 105 || origin == 111 || destiny == 105 || destiny == 111)
+        {
+            Debug.Log(origin + " => " + destiny);
+        }
     }
     
     public void addBannedNodes(List<Vector3> bannedNodes)

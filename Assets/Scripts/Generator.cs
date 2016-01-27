@@ -179,6 +179,7 @@ public class Generator : MonoBehaviour
                     {
                         int id = IAManager.getInstance().AddNode(tile.m_checkpoints[node].transform.position);
                         tile.tileNumber[node] = id;
+                        tile.m_checkpoints[node].name = id.ToString();
                     }
 
                     IATrafficLaws laws = go.GetComponent<IATrafficLaws>();
@@ -304,8 +305,10 @@ public class Generator : MonoBehaviour
     private void instantiateCars()
     {
         m_parentCar = new GameObject("parentCars");
+        
         for (int i = 0; i < m_totalCars; i++)
         {
+          
             GameObject go = Instantiate(m_car);
             Vector3 position;
             int id;
@@ -318,6 +321,7 @@ public class Generator : MonoBehaviour
                 mv.m_destiny = id;
             }
             go.transform.parent = m_parentCar.transform;
+
         }
     }
 
