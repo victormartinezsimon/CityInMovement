@@ -23,15 +23,14 @@ public class Movement : MonoBehaviour {
     #endregion
 
     public float timeBetweenPoints = 1;
-    private float timeAcum = 0;
-
-    public bool  modeLerp = true;
 
     public bool debug;
+    private bool responseFromIA;
+    private string m_name;
 
     #region strange bug
     private bool IBreakTheRules;
-    private List<Vector3> allMyCheckPoints;
+    private List<List<Vector3>> allMyCheckPoints;
     private GameObject parentBreakRules;
     private Vector3 dontMove;
     #endregion
@@ -43,8 +42,9 @@ public class Movement : MonoBehaviour {
         m_mutex.ReleaseMutex();
         getPath();
         m_nextPoint0 = transform.position;
+        responseFromIA = true;
         IBreakTheRules = false;
-        allMyCheckPoints = new List<Vector3>();
+        allMyCheckPoints = new List<List<Vector3>>();
     }
     // Update is called once per frame
     void Update() {
@@ -77,26 +77,13 @@ public class Movement : MonoBehaviour {
     private void doMovementTransform()
     {
         if (!m_move) { return; }
-        /*
-        Vector3 deltaMovement = (m_nextPoint1 - m_nextPoint0).normalized * m_velocityBetweenPoints * Time.deltaTime;
+       
+        Vector3 vDirector = (m_nextPoint1 - transform.position).normalized;
+        Vector3 deltaMovement = vDirector * m_velocityBetweenPoints * Time.deltaTime;
+
+        //Debug.DrawLine(this.transform.position, this.transform.position + vDirector, Color.magenta);
+        this.transform.up = vDirector;
         this.transform.position += deltaMovement;
-        */
-        if (modeLerp)
-        {
-            timeAcum += Time.deltaTime;
-            float time = timeAcum / timeBetweenPoints;
-            this.transform.position = Vector3.Lerp(m_nextPoint0, m_nextPoint1, time);
-        }
-        else
-        {
-            Vector3 vDirector = (m_nextPoint1 - transform.position).normalized;
-            Vector3 deltaMovement = vDirector * m_velocityBetweenPoints * Time.deltaTime;
-
-            Debug.DrawLine(this.transform.position, this.transform.position + vDirector, Color.magenta);
-            this.transform.up = vDirector;
-            this.transform.position += deltaMovement;
-        }
-
 
         arriveToDestiny();
     }
@@ -111,17 +98,19 @@ public class Movement : MonoBehaviour {
     #region ia
     private void getPath()
     {
-        string name = m_destiny + " => ";
+        m_name = m_destiny + " => ";
         m_destiny = IAManager.getInstance().giveMeRandomRoute(m_destiny, callbackIA);
-        name += m_destiny;
-        this.name = name;
-
+        m_name += m_destiny;
+        this.name = m_name;
+        responseFromIA = false;
         //IAManager.getInstance().giveMeRoute(1, 0, callbackIA);
     }
 
     private void callbackIA(List<Vector3> result)
     {
-        for(int i = 1; i < result.Count; i++)
+        responseFromIA = true;
+        allMyCheckPoints.Add(result);
+        for (int i = 1; i < result.Count; i++)
         {
             m_mutex.WaitOne();
             listPosition.Add(result[i]);
@@ -143,7 +132,6 @@ public class Movement : MonoBehaviour {
         float magnitude = distanceV3.magnitude;
         if(magnitude <= m_distanceAlpha)
         {
-            allMyCheckPoints.Add(transform.position);
             m_nextPoint0 = transform.position;
 
             //recalculate destiny or not move if there is no more destinies
@@ -160,18 +148,19 @@ public class Movement : MonoBehaviour {
             }
             else
             {
+                Debug.Log("Without destiny!!!!");
                 m_move = false;
+                getPath();
             }
             m_mutex.ReleaseMutex();
 
             //recalculate another path
             m_mutex.WaitOne();
-            if (listPosition.Count < m_marginAskRoute)
+            if (listPosition.Count < m_marginAskRoute && responseFromIA)
             {
                 getPath();
             }
             m_mutex.ReleaseMutex();
-            timeAcum = 0;
         }
     }
 
@@ -186,6 +175,7 @@ public class Movement : MonoBehaviour {
     }
     void OnTriggerEnter(Collider other)
     {
+        if (!debug) { return; }
         IBreakTheRules = true;
         int count = this.transform.parent.childCount;
         for(int i = 0; i< count; i++)
@@ -204,6 +194,24 @@ public class Movement : MonoBehaviour {
         }
         parentBreakRules = new GameObject("Break Rules");
         yield return new WaitForEndOfFrame();
+
+        for(int i = 0; i < allMyCheckPoints.Count; i++)
+        {
+            Color c = new Color(Random.value, Random.value, Random.value);
+
+            for(int j = 0; j < allMyCheckPoints[i].Count; j++)
+            {
+                GameObject go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                go.transform.position = allMyCheckPoints[i][j];
+                go.name = i.ToString() + "-" + j.ToString();
+                go.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f);
+                go.transform.parent = parentBreakRules.transform;
+                go.GetComponent<Renderer>().material.color = c;
+                yield return new WaitForSeconds(0.2f);
+            }
+        }
+
+        /*
         for(int i = 0; i < allMyCheckPoints.Count; i++)
         {
             GameObject go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -225,7 +233,7 @@ public class Movement : MonoBehaviour {
             go.GetComponent<Renderer>().material.color = Color.yellow;
             yield return new WaitForSeconds(0.4f);
         }
-
+        */
     }
     #endregion
 }

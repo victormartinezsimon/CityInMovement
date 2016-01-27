@@ -45,10 +45,6 @@ public class IAManager {
     public void addConexion(int origin, int destiny)
     {
         listNodes[origin].m_nexts.Add(destiny);
-        if(origin == 105 || origin == 111 || destiny == 105 || destiny == 111)
-        {
-            Debug.Log(origin + " => " + destiny);
-        }
     }
     
     public void addBannedNodes(List<Vector3> bannedNodes)
@@ -120,7 +116,6 @@ public class IAManager {
     {
         int destiny = UnityEngine.Random.Range(0, listNodes.Count);
         giveMeRoute(origin,destiny , callback);
-        Debug.Log("route from " + origin + " to " + destiny);
         return destiny;
     }
 
@@ -207,7 +202,7 @@ public class IAManager {
             }
             long tStop = DateTime.UtcNow.Ticks;
             long diff = tStop - tStart;
-            Debug.Log("Ticks to find route => " + diff);
+            //Debug.Log("Ticks to find route => " + diff);
         }
 
         private void addToList(NodeAStar actualNode, Vector3 transformToAdd, int newID)
@@ -263,7 +258,7 @@ public class IAManager {
                if(actualPath.Contains(m_bannedNodes[i][0]))
                 {
                     bool finded = false;
-                    int min = Mathf.Max(0, actualPath.Count - 5);
+                    int min = Mathf.Max(0, actualPath.Count - 10);
                     
                     for(int idx = min; idx < actualPath.Count; idx++)
                     {
