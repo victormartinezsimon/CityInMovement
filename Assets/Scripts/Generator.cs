@@ -90,7 +90,7 @@ public class Generator : MonoBehaviour
         }
         drawDebug();
     }
-
+    #region city
     public void GenerateCity()
     {
         m_cityGenerator = new CityGenerator ((int)DateTime.Now.Ticks, m_width, m_height);
@@ -126,7 +126,6 @@ public class Generator : MonoBehaviour
             posX += size.x;
         }
     }
-
     private GameObject instantiateSpecificPrefab(int tile, float posX, float posY)
     {
         GameObject m_gameObject = null;
@@ -154,7 +153,6 @@ public class Generator : MonoBehaviour
         m_gameObject.name = tile.ToString();
         return m_gameObject;
     }
-
     private void destroyPreviousPrefabs()
     {
         if (m_parent != null)
@@ -166,7 +164,8 @@ public class Generator : MonoBehaviour
             Destroy(m_parentCar);
         }
     }
-
+    #endregion
+    #region ia
     private void generateIA()
     {
         //step1-> add all nodes to the ia
@@ -232,6 +231,7 @@ public class Generator : MonoBehaviour
                 }
             }
         }
+        IAManager.getInstance().constructionEnded();
     }
     private void addExternalConexion(int i, int j, IATile tile)
     {
@@ -306,7 +306,8 @@ public class Generator : MonoBehaviour
 
 
     }
-
+    #endregion
+    #region car
     private void instantiateCars()
     {
         m_parentCar = new GameObject("parentCars");
@@ -318,7 +319,7 @@ public class Generator : MonoBehaviour
             Vector3 position;
             int id;
             IAManager.getInstance().getInitialPosition(out position, out id);
-
+            position.z = -1;
             go.transform.position = position;
             Movement mv = go.GetComponent<Movement>();
             if (mv != null)
@@ -329,6 +330,7 @@ public class Generator : MonoBehaviour
 
         }
     }
+    #endregion
 
     private void colocateCamera()
     {

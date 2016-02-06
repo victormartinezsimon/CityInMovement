@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿#define USE_POOL
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System;
@@ -20,18 +21,28 @@ public class IAManager {
     public List<GraphNode> listNodes;
 
     public delegate void callbackIA(List<Vector3> result);
+    private delegate void callbackIAPoll(IASearcher searcher);
 
     private List<List<Vector3>> m_bannedNodes;
+
+    private static int totalThreads = 5;
+    private static Semaphore m_pool;
+    List<IASearcher> m_avaliable;
 
     private IAManager()
     {
         listNodes = new List<GraphNode>();
+        m_bannedNodes = new List<List<Vector3>>();
+        m_avaliable = new List<IASearcher>();
+        m_pool = new Semaphore(totalThreads, totalThreads);
     }
     public void reset()
     {
         listNodes.Clear();
         UnityEngine.Random.seed = Mathf.RoundToInt(DateTime.Now.Ticks);
         m_bannedNodes = new List<List<Vector3>>();
+        m_pool = new Semaphore(totalThreads, totalThreads);
+        m_avaliable.Clear();
     }
     #region Graph builder
     public int AddNode(Vector3 position)
@@ -51,6 +62,14 @@ public class IAManager {
     {
         m_bannedNodes.Add(bannedNodes);
     }
+    public void constructionEnded()
+    {
+        for(int i = 0; i < totalThreads; i++)
+        {
+            IASearcher ia = new IASearcher(listNodes, m_bannedNodes);
+            m_avaliable.Add(ia);
+        }
+    }
     
     #endregion
     #region GraphNode
@@ -65,7 +84,6 @@ public class IAManager {
         }
     }
     #endregion
-
     #region nodeAStar
     private class NodeAStar : IComparable<NodeAStar>
     {
@@ -104,31 +122,40 @@ public class IAManager {
 
     }
     #endregion
-
-    public void giveMeRoute(int origin, int destiny, callbackIA callback)
+    #region search methods
+    private void giveMeRoute(int origin, int destiny, callbackIA callback)
     {
-        IASearcher searcher = new IASearcher(origin, destiny, callback, listNodes,m_bannedNodes);
-        Thread t = new Thread(searcher.makeSearch);
+        #if USE_POOL
+        m_pool.WaitOne();
+        IASearcher ia = m_avaliable[0];
+        m_avaliable.RemoveAt(0);
+        ia.resetSearch(origin, destiny, callback, (IASearcher s) => { m_avaliable.Add(s); m_pool.Release(); });
+        Thread t = new Thread(ia.makeSearch);
         t.Start();
+        #else
+          IASearcher searcher = new IASearcher(listNodes, m_bannedNodes);
+            searcher.resetSearch(origin, destiny, callback, null);
+            Thread t = new Thread(searcher.makeSearch);
+            t.Start();
+        #endif
     }
-
     public int giveMeRandomRoute(int origin, callbackIA callback)
     {
         int destiny = UnityEngine.Random.Range(0, listNodes.Count);
         giveMeRoute(origin,destiny , callback);
         return destiny;
     }
-
     public void getInitialPosition(out Vector3 position, out int m_id)
     {
         m_id = UnityEngine.Random.Range(0, listNodes.Count);
         position = listNodes[m_id].m_position;
     }
-
+#endregion
     #region thread
     private class IASearcher
     {
         private callbackIA m_callback;
+        private callbackIAPoll m_callbackPool;
         private List<GraphNode> m_Graph;
         private List<NodeAStar> m_orderedList;
         private List<internalNode> m_visited;
@@ -142,16 +169,17 @@ public class IAManager {
             public float cost;
         }
 
-        public IASearcher(int origin, int destiny, callbackIA callback,List<GraphNode> graph, List<List<Vector3>> bannedNodes)
+        public IASearcher(List<GraphNode> graph, List<List<Vector3>> bannedNodes)
         {
             m_Graph = graph;
             m_bannedNodes = bannedNodes;
-            resetSearch(origin, destiny, callback);
         }
-        public void resetSearch(int origin, int destiny, callbackIA callback)
+
+        public void resetSearch(int origin, int destiny, callbackIA callback, callbackIAPoll callbackPool)
         {
             m_destiny = m_Graph[destiny].m_position;
             m_callback = callback;
+            m_callbackPool = callbackPool;
             m_visited = new List<internalNode>();
             m_orderedList = new List<NodeAStar>();
             ended = false;
@@ -159,8 +187,6 @@ public class IAManager {
             NodeAStar firstNode = new NodeAStar(0, 0, origin, m_Graph[origin].m_position);
             m_orderedList.Add(firstNode);
         }
-        //maybe the algorithm is bad
-        //because we dont recalculate if we know how to reach a node for a better path
         public void makeSearch()
         {
             long tStart = DateTime.UtcNow.Ticks;
@@ -202,6 +228,10 @@ public class IAManager {
             }
             long tStop = DateTime.UtcNow.Ticks;
             long diff = tStop - tStart;
+            if(m_callbackPool != null)
+            {
+                m_callbackPool(this);
+            }
             //Debug.Log("Ticks to find route => " + diff);
         }
 
@@ -278,5 +308,5 @@ public class IAManager {
         }
 
     }
-    #endregion
+#endregion
 }
