@@ -281,7 +281,6 @@ public class IAManager {
 
         private bool wayBanned(NodeAStar actualNode, Vector3 transformToAdd)
         {
-
             List<Vector3> actualPath = actualNode.m_path;
             for (int i = 0; i < m_bannedNodes.Count; i++)
             {

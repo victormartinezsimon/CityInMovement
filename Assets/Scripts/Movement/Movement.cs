@@ -5,13 +5,22 @@ using System.Threading;
 
 public class Movement : MonoBehaviour {
 
-    public float m_maxVelocity = 10;
-    public float m_distanceAlpha = 0.2f;
+    public float m_distanceToReachPoint = 0.1f;
     public int m_marginAskRoute = 10;
-    public float m_velocityBetweenPoints;
+    public float m_maxVelocity = 10f;
+    private float m_actualVelocity;
+
+    [Header("ray variables")]
+    public float m_timeBetweenRays = 0.2f;
+    public float increaseMinDistance = 2;
+    public float m_increaseRayDistance = 2;
+    private float m_timeAcum;
+    private float m_minDistance;
+    private float m_rayDistance;
+    public LayerMask m_mask;
 
     [HideInInspector]
-    public int m_destiny;
+    public int m_destinyID;
 
     private List<Vector3> listPosition;
     private Mutex m_mutex;
@@ -20,10 +29,9 @@ public class Movement : MonoBehaviour {
     private Vector3 m_nextPoint2;
     private bool m_move = false;
     
-
-    public bool debug;
     private bool responseFromIA;
     private string m_name;
+    private float constantZ;
 
     #region unity
     // Use this for initialization
@@ -31,35 +39,63 @@ public class Movement : MonoBehaviour {
         m_mutex = new Mutex(true);
         listPosition = new List<Vector3>();
         m_mutex.ReleaseMutex();
+        constantZ = transform.position.z;
         getPath();
         m_nextPoint0 = transform.position;
         responseFromIA = true;
-       
+        initializeRays();
     }
     // Update is called once per frame
-    void Update() {
+    void Update()
+    {
+        RayManagement();
         doMovementTransform();
-        if (Input.GetKeyDown(KeyCode.D))
-        {
-            debug = !debug;
-        }
-        if (Input.GetKey(KeyCode.S))
-        {
-            if (debug)
-            {
-                transform.position = m_nextPoint1;
-                arriveToDestiny();
-            }
-        }
     }
     #endregion
     #region movement transform
+    private void initializeRays()
+    {
+        m_timeAcum = -Random.value;
+        m_minDistance = GetComponent<Renderer>().bounds.size.x * increaseMinDistance;
+        m_rayDistance = m_minDistance * m_increaseRayDistance;
+        m_actualVelocity = m_maxVelocity;
+    }
+
+    private void RayManagement()
+    {
+        m_timeAcum += Time.deltaTime;
+        if(m_timeAcum >= m_timeBetweenRays)
+        {
+            m_timeAcum = 0;
+            RaycastHit hit;
+            Ray r = new Ray(this.transform.position, this.transform.forward);
+            if(Physics.Raycast(r, out hit, m_rayDistance, m_mask))
+            {
+                float distance = hit.distance;
+                if(distance < m_minDistance)
+                {
+                    m_actualVelocity = 0;
+                }
+                else
+                {
+                    m_actualVelocity = m_maxVelocity * distance / m_rayDistance;
+                }
+                
+                Debug.DrawLine(this.transform.position, hit.transform.position, Color.red);
+            }
+            else
+            {
+                m_actualVelocity = m_maxVelocity;
+            }
+        }
+    }
+
     private void doMovementTransform()
     {
         if (!m_move) { return; }
        
         Vector3 vDirector = (m_nextPoint1 - transform.position).normalized;
-        Vector3 deltaMovement = vDirector * m_velocityBetweenPoints * Time.deltaTime;
+        Vector3 deltaMovement = vDirector * m_actualVelocity * Time.deltaTime;
 
         //Debug.DrawLine(this.transform.position, this.transform.position + vDirector, Color.magenta);
         this.transform.forward = vDirector;
@@ -79,12 +115,11 @@ public class Movement : MonoBehaviour {
     #region ia
     private void getPath()
     {
-        m_name = m_destiny + " => ";
-        m_destiny = IAManager.getInstance().giveMeRandomRoute(m_destiny, callbackIA);
-        m_name += m_destiny;
+        m_name = m_destinyID + " => ";
+        m_destinyID = IAManager.getInstance().giveMeRandomRoute(m_destinyID, callbackIA);
+        m_name += m_destinyID;
         this.name = m_name;
         responseFromIA = false;
-        //IAManager.getInstance().giveMeRoute(1, 0, callbackIA);
     }
 
     private void callbackIA(List<Vector3> result)
@@ -93,7 +128,8 @@ public class Movement : MonoBehaviour {
         for (int i = 1; i < result.Count; i++)
         {
             m_mutex.WaitOne();
-            listPosition.Add(result[i]);
+            Vector3 vToAdd = new Vector3(result[i].x, result[i].y, constantZ);
+            listPosition.Add(vToAdd);
             m_mutex.ReleaseMutex();
         }
         if(!m_move)
@@ -110,7 +146,7 @@ public class Movement : MonoBehaviour {
     {
         Vector3 distanceV3 = m_nextPoint1 - transform.position;
         float magnitude = distanceV3.magnitude;
-        if(magnitude <= m_distanceAlpha)
+        if(magnitude <= m_distanceToReachPoint)
         {
             m_nextPoint0 = transform.position;
 

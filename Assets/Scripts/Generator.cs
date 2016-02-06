@@ -319,12 +319,12 @@ public class Generator : MonoBehaviour
             Vector3 position;
             int id;
             IAManager.getInstance().getInitialPosition(out position, out id);
-            position.z = -1;
+            position.z = -2;
             go.transform.position = position;
             Movement mv = go.GetComponent<Movement>();
             if (mv != null)
             {
-                mv.m_destiny = id;
+                mv.m_destinyID = id;
             }
             go.transform.parent = m_parentCar.transform;
 
