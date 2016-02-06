@@ -71,6 +71,21 @@ public class Movement : MonoBehaviour {
             Ray r = new Ray(this.transform.position, this.transform.forward);
             if(Physics.Raycast(r, out hit, m_rayDistance, m_mask))
             {
+                Vector3 right = hit.transform.right;
+                Vector3 vDirector = (m_nextPoint1 - transform.position).normalized;
+                float angle = Vector3.Angle(right, vDirector);
+
+                //in this case, this is another semaphore, not a semaphore that affect us
+                //we must be sure is not another car
+                if(hit.transform.tag != "Player")
+                {
+                    if (angle < 170 || angle > 190)
+                    {
+                        m_actualVelocity = m_maxVelocity;
+                        return;
+                    }
+                }
+                
                 float distance = hit.distance;
                 if(distance < m_minDistance)
                 {

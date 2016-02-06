@@ -126,7 +126,11 @@ public class IAManager {
     private void giveMeRoute(int origin, int destiny, callbackIA callback)
     {
         #if USE_POOL
+        long tStart = DateTime.UtcNow.Ticks;
         m_pool.WaitOne();
+        long tStop = DateTime.UtcNow.Ticks;
+        long diff = tStop - tStart;
+        CityLog.getInstance().addTimeWait(diff);
         IASearcher ia = m_avaliable[0];
         m_avaliable.RemoveAt(0);
         ia.resetSearch(origin, destiny, callback, (IASearcher s) => { m_avaliable.Add(s); m_pool.Release(); });
@@ -228,6 +232,7 @@ public class IAManager {
             }
             long tStop = DateTime.UtcNow.Ticks;
             long diff = tStop - tStart;
+            CityLog.getInstance().addTimeIA(diff);
             if(m_callbackPool != null)
             {
                 m_callbackPool(this);
