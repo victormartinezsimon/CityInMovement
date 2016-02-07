@@ -33,6 +33,11 @@ public class Movement : MonoBehaviour {
     private string m_name;
     private float constantZ;
 
+    public int m_maxTimesWithoutVelocity = 30;
+    private int m_timesWithoutVelocityAcum = 0;
+    public float timeSkipRules = 1;
+    private float timeSkipRulesAcum = 0;
+
     #region unity
     // Use this for initialization
     void Start() {
@@ -48,7 +53,20 @@ public class Movement : MonoBehaviour {
     // Update is called once per frame
     void Update()
     {
-        RayManagement();
+        if(m_timesWithoutVelocityAcum >= m_maxTimesWithoutVelocity)
+        {
+            m_actualVelocity = m_maxVelocity;
+            timeSkipRulesAcum += Time.deltaTime;
+            if(timeSkipRulesAcum >= timeSkipRules)
+            {
+                timeSkipRulesAcum = 0;
+                m_timesWithoutVelocityAcum = 0;
+            }
+        }
+        else
+        {
+            RayManagement();
+        }
         doMovementTransform();
     }
     #endregion
@@ -81,6 +99,7 @@ public class Movement : MonoBehaviour {
                 {
                     if (angle < 170 || angle > 190)
                     {
+                        m_timesWithoutVelocityAcum = 0;
                         m_actualVelocity = m_maxVelocity;
                         return;
                     }
@@ -90,9 +109,11 @@ public class Movement : MonoBehaviour {
                 if(distance < m_minDistance)
                 {
                     m_actualVelocity = 0;
+                    m_timesWithoutVelocityAcum++;
                 }
                 else
                 {
+                    m_timesWithoutVelocityAcum = 0;
                     m_actualVelocity = m_maxVelocity * distance / m_rayDistance;
                 }
                 
@@ -100,6 +121,7 @@ public class Movement : MonoBehaviour {
             }
             else
             {
+                m_timesWithoutVelocityAcum = 0;
                 m_actualVelocity = m_maxVelocity;
             }
         }

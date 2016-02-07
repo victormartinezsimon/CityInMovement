@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System;
+using UnityEngine.SceneManagement;
 
 public class Generator : MonoBehaviour
 {
@@ -24,20 +25,14 @@ public class Generator : MonoBehaviour
     #endregion
 
     #region city variables
-    public int m_width;
-    public int m_height;
+    public int m_tamBoard;
 
-    public int Width
+    public int TamBoard
     {
-        get { return m_width; }
-        set { m_width = value; }
+        get { return m_tamBoard; }
+        set { m_tamBoard = value; }
     }
-    public int Height
-    {
-        get { return m_height; }
-        set { m_height = value; }
-    }
-
+    public bool withSemaphores = true;
     #endregion
 
     #region city generator
@@ -71,18 +66,14 @@ public class Generator : MonoBehaviour
     private GameObject m_parent = null;
     private GameObject m_parentCar = null;
     public bool debugMode = false;
-
-    void Start()
-    {
-        GenerateCity();
-    }
+    
 
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.G))
+        if (Input.GetKeyDown(KeyCode.Escape))
         {
-            GenerateCity();
+            SceneManager.LoadScene("Menu");
         }
         if (Input.GetKeyDown(KeyCode.D))
         {
@@ -93,7 +84,7 @@ public class Generator : MonoBehaviour
     #region city
     public void GenerateCity()
     {
-        m_cityGenerator = new CityGenerator ((int)DateTime.Now.Ticks, m_width, m_height);
+        m_cityGenerator = new CityGenerator ((int)DateTime.Now.Ticks, TamBoard, TamBoard);
         m_cityGenerator.Build();
         m_city = m_cityGenerator.getCity();
         instantiatePrefabs();
@@ -105,15 +96,15 @@ public class Generator : MonoBehaviour
     {
         destroyPreviousPrefabs();
         m_parent = new GameObject("parent");
-        m_gameObjects = new GameObject[m_width, m_height];
+        m_gameObjects = new GameObject[TamBoard, TamBoard];
         float posX = 0;
         float posY = 0;
 
         Vector3 size = tile0.GetComponent<Renderer>().bounds.size;
 
-        for (int i = 0; i < m_width; i++)
+        for (int i = 0; i < TamBoard; i++)
         {
-            for (int j = 0; j < m_height; j++)
+            for (int j = 0; j < TamBoard; j++)
             {
                 int tile = m_city[i, j];
                 GameObject goInstantiated = instantiateSpecificPrefab(tile, posX, posY);
@@ -170,9 +161,9 @@ public class Generator : MonoBehaviour
     {
         //step1-> add all nodes to the ia
         IAManager.getInstance().reset();
-        for (int i = 0; i < m_width; i++)
+        for (int i = 0; i < TamBoard; i++)
         {
-            for (int j = 0; j < m_height; j++)
+            for (int j = 0; j < TamBoard; j++)
             {
                 GameObject go = m_gameObjects[i, j];
                 IATile tile = go.GetComponent<IATile>();
@@ -206,9 +197,9 @@ public class Generator : MonoBehaviour
             }
         }
         //step2-> add the conexions
-        for (int i = 0; i < m_width; i++)
+        for (int i = 0; i < TamBoard; i++)
         {
-            for (int j = 0; j < m_height; j++)
+            for (int j = 0; j < TamBoard; j++)
             {
                 GameObject go = m_gameObjects[i, j];
                 IATile tile = go.GetComponent<IATile>();
@@ -335,7 +326,7 @@ public class Generator : MonoBehaviour
     private void colocateCamera()
     {
         Vector3 size = tile0.GetComponent<Renderer>().bounds.size;
-        Vector3 newpos = new Vector3(size.x * m_width / 2, size.y * m_height / 2, -10);
+        Vector3 newpos = new Vector3(size.x * TamBoard / 2, size.y * TamBoard / 2, -10);
         Camera.main.transform.position = newpos;
 
         CameraController cc = Camera.main.GetComponent<CameraController>();
@@ -343,9 +334,9 @@ public class Generator : MonoBehaviour
         {
             float[] limit = new float[4];
             limit[0] = 0;
-            limit[1] = size.x * m_width - size.x / 2;
+            limit[1] = size.x * TamBoard - size.x / 2;
             limit[2] = 0;
-            limit[3] = size.y * m_height - size.y / 2;
+            limit[3] = size.y * TamBoard - size.y / 2;
             cc.limitValues = limit;
         }
     }

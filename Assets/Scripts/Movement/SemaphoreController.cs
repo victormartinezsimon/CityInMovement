@@ -5,21 +5,35 @@ public class SemaphoreController : MonoBehaviour {
 
     private enum SemaphoreStates { RouteOne, RouteTwo, FromRouteOne, FromRouteTwo };
 
-    public float timeSemaphone;
-    private float timeChange;
-    private SemaphoreStates state;
     public GameObject[] routeOne;
     public GameObject[] routeTwo;
-    private float timeAcum;
     public Color m_red;
     public Color m_green;
     public int m_minTimeChange = 1;
     public int m_maxTimeChange = 5;
     public float timeAllBlocked = 0.5f;
+    private float timeSemaphone;
+    private float timeChangeState;
+    private SemaphoreStates state;
+    private float timeAcum;
+    
 
 	// Use this for initialization
 	void Start () {
-        timeChange = Random.Range(m_minTimeChange, m_maxTimeChange) + Random.value;
+        if (!Generator.getInstance().withSemaphores)
+        {
+           for(int i = 0; i < routeOne.Length; i++)
+           {
+                Destroy(routeOne[i]);
+           }
+            for (int i = 0; i < routeTwo.Length; i++)
+            {
+                Destroy(routeTwo[i]);
+            }
+            this.enabled = false;
+            return;
+        }
+        timeSemaphone = Random.Range(m_minTimeChange, m_maxTimeChange) + Random.value;
         timeAcum = 0;
         state = (SemaphoreStates)Random.Range(0,4);
         changeSemaphores();
@@ -28,7 +42,7 @@ public class SemaphoreController : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
         timeAcum += Time.deltaTime;
-        if(timeAcum >= timeChange)
+        if(timeAcum >= timeChangeState)
         {
             timeAcum = 0;
            
@@ -58,14 +72,14 @@ public class SemaphoreController : MonoBehaviour {
                 twoColor = m_red;
                 oneEnable = true;
                 twoEnable = false;
-                //timeChange = timeSemaphone;
+                timeChangeState = timeSemaphone;
                 break;
             case SemaphoreStates.RouteTwo:
                 oneColor = m_red;
                 twoColor = m_green;
                 oneEnable = false;
                 twoEnable = true;
-                //timeChange = timeSemaphone;
+                timeChangeState = timeSemaphone;
                 break;
             case SemaphoreStates.FromRouteTwo:
             case SemaphoreStates.FromRouteOne:
@@ -73,7 +87,7 @@ public class SemaphoreController : MonoBehaviour {
                 twoColor = m_red;
                 oneEnable = false;
                 twoEnable = false;
-               // timeChange = timeAllBlocked;
+                timeChangeState = timeAllBlocked;
                 break;
 
         }

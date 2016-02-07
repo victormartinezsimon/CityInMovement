@@ -36,6 +36,7 @@ public class CityLog {
 
     public void addTimeIA(float time)
     {
+        time = time / 10000;
         timeIA.Add(time);
         if(time < minTimeIA)
         {
@@ -48,6 +49,7 @@ public class CityLog {
     }
     public void addTimeWait(float time)
     {
+        time = time / 10000;
         timeWait.Add(time);
         if (time < minTimeWait)
         {
@@ -64,23 +66,23 @@ public class CityLog {
         StringBuilder sb = new StringBuilder();
         sb.AppendLine("Statics");
         sb.AppendLine("--------");
-        sb.AppendLine("Min time waiting to ask for ia => " + minTimeWait);
-        sb.AppendLine("Max time waiting to ask for ia => " + maxTimeWait);
+        sb.AppendLine("Min time waiting to ask for ia => " + minTimeWait + "ms");
+        sb.AppendLine("Max time waiting to ask for ia => " + maxTimeWait + "ms");
         float sumWait= 0;
         for (int i = 0; i < timeWait.Count; i++)
         {
             sumWait += timeWait[i];
         }
-        sb.AppendLine("Average time waiting to ask for ia => " + (sumWait / timeWait.Count).ToString());
+        sb.AppendLine("Average time waiting to ask for ia => " + (sumWait / timeWait.Count).ToString() + "ms");
 
-        sb.AppendLine("Min time waiting for ia => " + minTimeIA);
-        sb.AppendLine("Max time waiting for ia => " + maxTimeIA);
+        sb.AppendLine("Min time waiting for ia => " + minTimeIA + "ms");
+        sb.AppendLine("Max time waiting for ia => " + maxTimeIA + "ms");
         float sumIA = 0;
         for(int i = 0; i < timeIA.Count; i++)
         {
             sumIA += timeIA[i];
         }
-        sb.AppendLine("Average time waiting for ia => " + (sumIA / timeIA.Count).ToString());
+        sb.AppendLine("Average time waiting for ia => " + (sumIA / timeIA.Count).ToString() + "ms");
 
         return sb.ToString();
     }

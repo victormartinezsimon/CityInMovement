@@ -13,6 +13,7 @@ public class CameraController : MonoBehaviour {
 
     void Start()
     {
+        Generator.getInstance().GenerateCity();
         Camera.main.orthographicSize = (maxValueOrthographicSize - minValueOrthographicSize) / 2 + minValueOrthographicSize;
     }
 
