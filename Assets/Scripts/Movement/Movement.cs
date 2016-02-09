@@ -17,7 +17,8 @@ public class Movement : MonoBehaviour {
     private float m_timeAcum;
     private float m_minDistance;
     private float m_rayDistance;
-    public LayerMask m_mask;
+    public LayerMask m_carMask;
+    public LayerMask m_semaphoreMask;
 
     [HideInInspector]
     public int m_destinyID;
@@ -85,28 +86,56 @@ public class Movement : MonoBehaviour {
         if(m_timeAcum >= m_timeBetweenRays)
         {
             m_timeAcum = 0;
-            RaycastHit hit;
+            bool raySuccess = false;
+            float distance = float.MaxValue ;
+
             Ray r = new Ray(this.transform.position, this.transform.forward);
-            if(Physics.Raycast(r, out hit, m_rayDistance, m_mask))
+
+            //semaphore Ray
+            RaycastHit hitSemahore;
+            if (Physics.Raycast(r, out hitSemahore, m_rayDistance, m_semaphoreMask))
             {
-                Vector3 right = hit.transform.right;
+                Vector3 right = hitSemahore.transform.right;
                 Vector3 vDirector = (m_nextPoint1 - transform.position).normalized;
                 float angle = Vector3.Angle(right, vDirector);
 
-                //in this case, this is another semaphore, not a semaphore that affect us
-                //we must be sure is not another car
-                if(hit.transform.tag != "Player")
+                if (angle < 170 || angle > 190)
                 {
-                    if (angle < 170 || angle > 190)
-                    {
-                        m_timesWithoutVelocityAcum = 0;
-                        m_actualVelocity = m_maxVelocity;
-                        return;
-                    }
+                    raySuccess = false;
                 }
-                
-                float distance = hit.distance;
-                if(distance < m_minDistance)
+                else
+                {
+                    raySuccess = true;
+                    distance = hitSemahore.distance;
+                    Debug.DrawLine(this.transform.position, hitSemahore.transform.position, Color.red);
+                }
+            }
+            //car ray
+            RaycastHit hitCar;
+            if (Physics.Raycast(r, out hitCar, m_rayDistance, m_carMask))
+            {
+                raySuccess = true;
+                distance = hitCar.distance;
+                Debug.DrawLine(this.transform.position, hitCar.transform.position, Color.blue);
+            }
+
+            //ray to the future
+            Vector3 director = (m_nextPoint2 - this.transform.position);
+            Ray rToTheFuture = new Ray(this.transform.position, director.normalized);
+            float size =director.magnitude;
+            RaycastHit hitFuture;
+
+            if (Physics.Raycast(rToTheFuture, out hitFuture, size, m_carMask))
+            {
+                raySuccess = true;
+                distance = hitFuture.distance;
+                Debug.DrawLine(this.transform.position, hitFuture.transform.position, Color.green);
+            }
+
+
+            if (raySuccess)
+            {
+                if (distance < m_minDistance)
                 {
                     m_actualVelocity = 0;
                     m_timesWithoutVelocityAcum++;
@@ -116,14 +145,14 @@ public class Movement : MonoBehaviour {
                     m_timesWithoutVelocityAcum = 0;
                     m_actualVelocity = m_maxVelocity * distance / m_rayDistance;
                 }
-                
-                Debug.DrawLine(this.transform.position, hit.transform.position, Color.red);
             }
             else
             {
                 m_timesWithoutVelocityAcum = 0;
                 m_actualVelocity = m_maxVelocity;
             }
+
+           
         }
     }
 
@@ -197,12 +226,17 @@ public class Movement : MonoBehaviour {
                 {
                     m_nextPoint2 = listPosition[1];
                 }
+                else
+                {
+                    m_nextPoint2 = m_nextPoint1;
+                }
                 m_move = true;
             }
             else
             {
                 Debug.Log("Without destiny!!!!");
                 m_move = false;
+                m_nextPoint0 = m_nextPoint1 = m_nextPoint2 = transform.position;
                 getPath();
             }
             m_mutex.ReleaseMutex();
